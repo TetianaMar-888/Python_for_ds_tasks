@@ -334,7 +334,7 @@ def process_data(csv_name: str = "train.csv") -> Dict[str, pd.DataFrame | pd.Ser
         DeprecationWarning,
         stacklevel=2
     )
-    bundle = prepare_datasets(csv_name=csv_name)
+    bundle = prepare_datasets(csv_name=DataFrame)
 
     return {
         "train_X": bundle.train_X,
