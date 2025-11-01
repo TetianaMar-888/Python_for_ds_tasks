@@ -99,6 +99,61 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 import warnings
 
 
+def prepare_datasets_from_df(
+    df: pd.DataFrame,
+    target_col: str = "Exited",
+    required_cols: List[str] = None,
+    random_state: int = 42
+) -> DatasetBundle:
+    """
+    Версія prepare_datasets, що приймає DataFrame замість імені файлу.
+    Використовуйте це в Jupyter/Colab, коли ви вже завантажили дані.
+    """
+    if required_cols is None:
+        required_cols = ["CustomerId", target_col]
+
+    # Clean
+    raw_df = drop_required_na(df, required_cols)
+
+    # Features/target split
+    X, y = split_features_target(raw_df, target_col=target_col, drop_cols=["CustomerId"])
+
+    # Split to train/val/test
+    X_train, X_val, X_test, y_train, y_val, y_test = split_60_20_20(X, y, random_state=random_state)
+
+    # Column types
+    numeric_cols, categorical_cols = detect_column_types(X_train)
+
+    # Numeric: impute → scale
+    num_imputer = fit_numeric_imputer(X_train, numeric_cols)
+    X_train = transform_numeric_imputer(num_imputer, X_train, numeric_cols)
+    X_val   = transform_numeric_imputer(num_imputer, X_val,   numeric_cols)
+    X_test  = transform_numeric_imputer(num_imputer, X_test,  numeric_cols)
+
+    scaler = fit_scaler(X_train, numeric_cols)
+    X_train = transform_scaler(scaler, X_train, numeric_cols)
+    X_val   = transform_scaler(scaler, X_val,   numeric_cols)
+    X_test  = transform_scaler(scaler, X_test,  numeric_cols)
+
+    # Categorical: one-hot
+    encoder = fit_onehot_encoder(X_train, categorical_cols)
+    X_train, encoded_cols = transform_onehot_concat(encoder, X_train, categorical_cols)
+    X_val,   _            = transform_onehot_concat(encoder, X_val,   categorical_cols)
+    X_test,  _            = transform_onehot_concat(encoder, X_test,  categorical_cols)
+
+    return DatasetBundle(
+        train_X=X_train,
+        train_y=y_train,
+        val_X=X_val,
+        val_y=y_val,
+        test_X=X_test,
+        test_y=y_test,
+        numeric_cols=numeric_cols,
+        categorical_cols=categorical_cols,
+        encoded_cols=encoded_cols,
+    )
+    
+
 # --------------------------- Data structures ---------------------------
 
 @dataclass(frozen=True)
