@@ -306,9 +306,15 @@ def prepare_submission_test(
     
     # Переконатися, що колонки збігаються з train
     # Додати відсутні колонки з нулями
-    missing_cols = set(train_data.train_X.columns) - set(X_test.columns)
-    for col in missing_cols:
-        X_test[col] = 0
+    #missing_cols = set(train_data.train_X.columns) - set(X_test.columns)
+    #for col in missing_cols:
+       # X_test[col] = 0
+
+    missing_cols = list(set(train_data.train_X.columns) - set(X_test.columns))
+    if missing_cols:
+        zeros_df = pd.DataFrame(0, index=X_test.index, columns=missing_cols)
+        X_test = pd.concat([X_test, zeros_df], axis=1)
+
     
     # Видалити зайві колонки
     extra_cols = set(X_test.columns) - set(train_data.train_X.columns)
