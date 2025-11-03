@@ -259,7 +259,7 @@ def prepare_datasets(
     )
 
 def prepare_submission_test(
-    test_df: pd.DataFrame,
+    raw_df_test: pd.DataFrame,
     train_data: DatasetBundle
 ) -> tuple[pd.DataFrame, pd.Series]:
     """
@@ -271,10 +271,10 @@ def prepare_submission_test(
         ids: CustomerId для submission файлу
     """
     # Зберегти ID для submission
-    ids = test_df['CustomerId'].copy()
+    ids = raw_df_test['CustomerId'].copy()
     
     # Видалити CustomerId
-    X_test = test_df.drop(columns=['CustomerId']).copy()
+    X_test = raw_df_test.drop(columns=['CustomerId']).copy()
     
     # Заповнити NaN (mean strategy як на train)
     from sklearn.impute import SimpleImputer
