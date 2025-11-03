@@ -274,7 +274,9 @@ def prepare_submission_test(
     ids = raw_df_test['CustomerId'].copy()
     
     # Видалити CustomerId
-    X_test = raw_df_test.drop(columns=['CustomerId']).copy()
+    id_col = 'CustomerId' if 'CustomerId' in raw_df_test.columns else 'id'
+    ids = raw_df_test[id_col].copy()
+    X_test = raw_df_test.drop(columns=[id_col]).copy()
     
     # Заповнити NaN (mean strategy як на train)
     from sklearn.impute import SimpleImputer
