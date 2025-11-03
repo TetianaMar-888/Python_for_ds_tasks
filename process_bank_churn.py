@@ -258,6 +258,24 @@ def prepare_datasets(
         encoded_cols=encoded_cols,
     )
 
+@dataclass(frozen=True)
+class DatasetBundle:
+    """Контейнер з розбитими та перетвореними наборами даних."""
+    train_X: pd.DataFrame
+    train_y: pd.Series
+    val_X: pd.DataFrame
+    val_y: pd.Series
+    test_X: pd.DataFrame
+    test_y: pd.Series
+    numeric_cols: List[str]
+    categorical_cols: List[str]
+    encoded_cols: List[str]
+
+    # додати для трансформацій
+    num_imputer: SimpleImputer
+    scaler: MinMaxScaler
+    encoder: OneHotEncoder
+
 def prepare_submission_test(
     raw_df_test: pd.DataFrame,
     train_data: DatasetBundle
