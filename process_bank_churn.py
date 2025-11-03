@@ -270,59 +270,40 @@ def prepare_submission_test(
         X_test: Оброблені features
         ids: CustomerId для submission файлу
     """
-    # Зберегти ID для submission
-    ids = raw_df_test['CustomerId'].copy()
-    
-    # Видалити CustomerId
+    # ---------------------- Визначаємо колонку з ID ----------------------
     id_col = 'CustomerId' if 'CustomerId' in raw_df_test.columns else 'id'
     ids = raw_df_test[id_col].copy()
     X_test = raw_df_test.drop(columns=[id_col]).copy()
-    
-    # Заповнити NaN (mean strategy як на train)
-    from sklearn.impute import SimpleImputer
-    numeric_cols = X_test.select_dtypes(include=np.number).columns.tolist()
-    
-    if numeric_cols:
-        imputer = SimpleImputer(strategy="mean")
-        X_test[numeric_cols] = imputer.fit_transform(X_test[numeric_cols])
-    
-    # One-hot encoding для categorical
-    categorical_cols = X_test.select_dtypes(exclude=np.number).columns.tolist()
-    
-    if categorical_cols:
-        from sklearn.preprocessing import OneHotEncoder
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-        encoder.fit(X_test[categorical_cols])
-        
-        encoded = encoder.transform(X_test[categorical_cols])
-        encoded_cols = list(encoder.get_feature_names_out(categorical_cols))
-        encoded_df = pd.DataFrame(encoded, index=X_test.index, columns=encoded_cols)
-        
-        X_test = pd.concat([X_test.drop(columns=categorical_cols), encoded_df], axis=1)
-    
-    # Масштабування (0-1)
-    from sklearn.preprocessing import MinMaxScaler
-    if numeric_cols:
-        scaler = MinMaxScaler()
-        X_test[numeric_cols] = scaler.fit_transform(X_test[numeric_cols])
-    
-    # Переконатися, що колонки збігаються з train
-    # Додати відсутні колонки з нулями
-    #missing_cols = set(train_data.train_X.columns) - set(X_test.columns)
-    #for col in missing_cols:
-       # X_test[col] = 0
 
-    missing_cols = list(set(train_data.train_X.columns) - set(X_test.columns))
+    # ---------------------- Заповнення NaN числових колонок ----------------------
+    numeric_cols = train_data.numeric_cols
+    if numeric_cols:
+        X_test[numeric_cols] = train_data.num_imputer.transform(X_test[numeric_cols])
+
+    # ---------------------- Масштабування числових колонок ----------------------
+    if numeric_cols:
+        X_test[numeric_cols] = train_data.scaler.transform(X_test[numeric_cols])
+
+    # ---------------------- One-Hot Encoding для категоріальних колонок ----------------------
+    categorical_cols = train_data.categorical_cols
+    if categorical_cols:
+        encoded = train_data.encoder.transform(X_test[categorical_cols])
+        encoded_cols = list(train_data.encoder.get_feature_names_out(categorical_cols))
+        encoded_df = pd.DataFrame(encoded, index=X_test.index, columns=encoded_cols)
+        X_test = pd.concat([X_test.drop(columns=categorical_cols), encoded_df], axis=1)
+
+    # ---------------------- Додавання відсутніх колонок ----------------------
+    missing_cols = set(train_data.train_X.columns) - set(X_test.columns)
     if missing_cols:
         zeros_df = pd.DataFrame(0, index=X_test.index, columns=missing_cols)
         X_test = pd.concat([X_test, zeros_df], axis=1)
 
-    
-    # Видалити зайві колонки
+    # ---------------------- Видалення зайвих колонок ----------------------
     extra_cols = set(X_test.columns) - set(train_data.train_X.columns)
-    X_test = X_test.drop(columns=list(extra_cols))
-    
-    # Впорядкувати колонки як у train
+    if extra_cols:
+        X_test = X_test.drop(columns=list(extra_cols))
+
+    # ---------------------- Впорядкування колонок ----------------------
     X_test = X_test[train_data.train_X.columns]
-    
+
     return X_test, ids
